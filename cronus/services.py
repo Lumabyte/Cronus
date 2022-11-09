@@ -12,7 +12,7 @@ class Discord(Client, Service):
         pass
 
     async def on_start(self):
-        await self.start("NzEwNzQ0NzU0Mzc1MzYwNTQ1.GEXPYb.hcOBPilGApp3tFi59dCovJeyTfhOfYZtB5BSCs")
+        await self.start("hmmm")
 
     async def on_stop(self) -> None:
         await self.close()
