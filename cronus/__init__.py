@@ -1,46 +1,21 @@
-import logging
+import os
+import inspect
+import importlib
 import asyncio
-from aiohttp import web
-import discord
-from discord.ext.commands import Bot
+import logging
 
-TOKEN = "NzEwNzQ0NzU0Mzc1MzYwNTQ1.GKVcSF.zvO-J0GfZMNFksSWLGKJ-XmCQKcQufVfz_nuD4"
+from cronus.core import Cronus
+from cronus.services import Discord
 
-class Bottie():
 
-    def __init__(self, loop=None, logger=None) -> None:
-        # load shit from config file
-        if not loop:
-            loop = asyncio.get_event_loop()
-        self._loop = loop
-        if not logger:
-            logger = logging.getLogger("bottie")
-        self._logger = logger
-
-        self.__setup_db()
-        self.__setup_discord()
-        self.__setup_http()
-        self.__setup_ws()
-
-    def run(self):
-        asyncio.run(self.__start())
-
-    async def __start(self) -> None:
-        async with self._discord:
-            await self._discord.start(TOKEN)
-
-    def __stop(self) -> None:
-        pass
-
-    def __setup_discord(self) -> None:
-        self._discord = Bot(loop=self._loop, command_prefix=discord.ext.commands.when_mentioned_or(
-            '!'), intents=discord.Intents.default())
-
-    def __setup_http(self) -> None:
-        self._rest = web.Application()
-
-    def __setup_ws(self) -> None:
-        pass
-
-    def __setup_db(self) -> None:
-        pass
+if __name__ == "__main__":
+    #logging.basicConfig(level=logging.DEBUG)
+    bot = Cronus()
+    bot.load_plugins()
+    bot.discord = Discord(bot)
+    print(bot.plugins) # Works
+    print(bot.discord) # None?
+    event_loop = asyncio.get_event_loop()
+    event_loop.set_debug(True)
+    event_loop.run_until_complete(bot.discord.on_start())
+    event_loop.run_forever()

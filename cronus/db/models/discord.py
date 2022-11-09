@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, String, BigInteger, Integer
 from sqlalchemy.orm import relationship
-from cronus.db.models import Base
-from cronus.db.models.mixins import SoftDeleteMixin, AuditMixin
+
+from cronus.core.db.models import Base, AuditMixin, SoftDeleteMixin
 
 
 class DiscordServer(Base, AuditMixin, SoftDeleteMixin):

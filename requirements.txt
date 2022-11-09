@@ -1,5 +1,8 @@
 discord.py
-aiohttp
+unqlite
+fastapi
+textual
 sqlalchemy
 pytest
 bcrypt
+watchdog

@@ -3,8 +3,8 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.orm import relationship
-from cronus.db.models import Base
-from cronus.db.models.mixins import SoftDeleteMixin, AuditMixin
+
+from cronus.core.db.models import Base, AuditMixin, SoftDeleteMixin
 
 
 class Account(Base, AuditMixin, SoftDeleteMixin):
