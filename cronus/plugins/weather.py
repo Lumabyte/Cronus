@@ -1,18 +1,24 @@
-from cronus.core import Plugin, Event, discord
+import aiohttp
+import asyncio
+from cronus.plugin import Plugin, plugin, handler
 
 
+WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,relativehumidity_2m,windspeed_10m"
+
+
+@plugin(name="weather", description="Fetching weather information")
 class Weather(Plugin):
-    def __init__(self, chronus) -> None:
-        super().__init__(chronus, "weather")
 
-    @discord("socket_event_type")
-    async def s_1(self, event: Event):
-        self.logger.info("s1: %s", event)
+    @handler("discord", "message")
+    async def get_weather(self, _: any, message: str):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(WEATHER_URL) as response:
+                weather = await response.json()
+                print(weather)
 
-    @discord("guild_available")
-    async def s_2(self, event: Event):
-        self.logger.info("s2: %s", event)
 
-    @discord("ready")
-    async def s_3(self, event: Event):
-        self.logger.info("s3: %s", event)
+if __name__ == "__main__":
+    weather = Weather(None)
+    func = weather.get_weather("source", "!weather cape_town")
+    asyncio.run(func)
+

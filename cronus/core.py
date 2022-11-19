@@ -1,18 +1,36 @@
 import os
 import importlib
+import asyncio
 import inspect
 import logging
+
+#from cronus.services.discord import Discord
 
 class Event:
     def __init__(self) -> None:
         pass
 
 class Cronus():
+
+
     def __init__(self) -> None:
         self.plugins = {}
         self.services = {}
         self.reloader = None
         self.discord = None
+        self._loop = asyncio.get_event_loop()
+
+    @property
+    def get_looper(self) -> asyncio.AbstractEventLoop:
+        return self._loop
+
+    def start(self) -> None:
+        #self._loop.run_until_complete(self.discord.on_start())
+        self._loop.run_forever()
+
+    def load_services(self):
+        pass
+        #self.services["discord"] = Discord(self)
 
     def load_plugins(self):
         p = os.listdir("cronus/plugins")
@@ -74,57 +92,3 @@ class Service(Lifecycle):
         self.cronus = cronus
         self.name = name
         self.logger = logging.getLogger(f'service.{self.name}')
-
-
-class Plugin(Lifecycle):
-    def __new__(cls: type[Self]) -> Self:
-        list = "_Plugin_event_handlers"
-
-        if not hasattr(cls, list):
-            setattr(cls, list, [])
-        list = getattr(cls. list)
-
-        return super().__new__()
-
-    def __init__(self, cronus: Cronus, name: str) -> None:
-        super().__init__()
-        self.cronus = cronus
-        self.name = name
-        self.logger = logging.getLogger(f'plugin.{self.name}')
-
-    def get_state():
-        pass
-
-    def set_state():
-        pass
-
-def plugin(version: str, author: str, ):
-    def wrapper(cls):
-        cls.version="",
-        cls.author="",
-        cls.meta=""
-        return cls
-    return wrapper
-
-def handler(service: str, event: str):
-    def wrapper(function):
-        function.service = service
-        function.event = event
-        return function
-    return wrapper
-
-
-def discord(event: str):
-    def wrapper(function):
-        function.service = "discord"
-        function.event = event
-        return function
-    return wrapper
-
-
-def http(event: str):
-    def wrapper(function):
-        function.service = "http"
-        function.event = event
-        return function
-    return wrapper
