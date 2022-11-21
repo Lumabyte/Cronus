@@ -5,36 +5,6 @@ from inspect import getmembers, ismethod
 
 from cronus.core import Cronus
 
-"""
-    discord:
-        message
-        leavechannel
-        joinchannel
-        ready
-
-    twitch:
-        message
-        leavechannel
-        joinchannel
-        ready
-
-    http:
-        get
-        post
-
-    event
-        response (as some responder object)
-            - reply
-"""
-
-class Response:
-    async def reply(self):
-        pass
-
-class Event:
-    def __init__(self, response: Response) -> None:
-        pass
-
 
 class Plugin():
 
@@ -52,12 +22,15 @@ class Plugin():
 
     # take an incoming event return a taskable for the core
     # app to start running the task
-    async def on_event(self, source: any, source_name: any, event_name: any, *args: any, **kwargs: any):
+    # TODO: source_name can come from the source, event needs to be a new object
+    async def on_event(self, event: Event):
         for event_handler in self._event_handlers:
-            if not self._can_handle_event(event_handler, source_name, event_name):
+            print(event_handler)
+            if not self._can_handle_event(event_handler, event.source, event.name):
                 return
+            print(event_handler)
             if self._has_command_args(event_handler):
-                pass
+                print(event_handler)
                 # check if help is needed
                 # try parse command for given field
                 # change args for command usage
@@ -71,6 +44,7 @@ class Plugin():
     # is_handler = True
     def _setup(self):
         for _, method in getmembers(self, ismethod):
+            print(f"setup: ${_} ${method}")
             if self._is_handler(method):
                 self._event_handlers.append(method)
                 if self._has_command_args(method):

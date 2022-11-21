@@ -1,6 +1,7 @@
 import logging
 from cronus.core import Cronus
 
+
 logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":

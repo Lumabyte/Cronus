@@ -4,14 +4,8 @@ import asyncio
 import inspect
 import logging
 
-#from cronus.services.discord import Discord
-
-class Event:
-    def __init__(self) -> None:
-        pass
 
 class Cronus():
-
 
     def __init__(self) -> None:
         self.plugins = {}
@@ -69,26 +63,3 @@ class Cronus():
                         pass
                 else:
                     print(f"method is not callable")
-
-
-
-class Lifecycle:
-    async def on_create(self) -> None:
-        pass
-
-    async def on_start(self) -> None:
-        pass
-
-    async def on_stop(self) -> None:
-        pass
-
-    async def on_destroy(self) -> None:
-        pass
-
-
-class Service(Lifecycle):
-    def __init__(self, cronus: Cronus, name: str) -> None:
-        super().__init__()
-        self.cronus = cronus
-        self.name = name
-        self.logger = logging.getLogger(f'service.{self.name}')

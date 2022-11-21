@@ -31,7 +31,5 @@ if __name__ == "__main__":
     test = Pokemon(None)
     # print(dir(test))
     # print(dir(test._event_handlers))
-    x = test.handler_s1_e1("source", "pokemon whois mew")
+    x = test.on_event("", "", "message", { "message": "pokemon --help" })
     asyncio.run(x)
-    y = test.handler_s1_e1("source", "pokemon --help")
-    asyncio.run(y)
