@@ -16,7 +16,7 @@ class Account(Base, AuditMixin, SoftDeleteMixin):
 
     attributes = relationship("AccountAttribute", backref="account")
     identities = relationship("AccountIdentity", backref="account")
-    permissions = relationship("AccountPermission", backref="account")
+    scopes = relationship("AccountScope", backref="account")
 
     def __repr__(self):
         return f"Account(id={self.id!r}, name={self.username!r}, password={self.password!r})"
@@ -47,13 +47,12 @@ class AccountIdentity(Base, AuditMixin, SoftDeleteMixin):
         return f"AccountIdentity(id={self.id!r}, name={self.source!r}, value={self.identity!r})"
 
 
-class AccountPermission(Base, AuditMixin, SoftDeleteMixin):
-    __tablename__ = "account_permission"
+class AccountScope(Base, AuditMixin, SoftDeleteMixin):
+    __tablename__ = "account_scope"
 
     id = Column(Integer, primary_key=True)
     account_id = Column(Integer, ForeignKey('account.id'))
-    name = Column(String, nullable=False)
-    value = Column(String, nullable=False)
+    scope = Column(String, nullable=False)
 
     def __repr__(self):
-        return f"AccountPermission(id={self.id!r}, name={self.name!r}, value={self.value!r})"
+        return f"AccountScope(id={self.id!r}, name={self.name!r}, value={self.value!r})"
