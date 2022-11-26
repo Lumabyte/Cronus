@@ -1,7 +1,7 @@
 import logging
 from cronus.core import Cronus
-from cronus.event import Event
 from cronus.service import Service
+from cronus.services.console import Console
 
 class FakeService(Service):
     def __init__(self) -> None:
@@ -11,9 +11,6 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)-12s %(messa
 
 if __name__ == "__main__":
     bot = Cronus()
-    bot.load_services()
-    bot.load_plugin("cronus.plugins.test")
-
-    fake = FakeService()
-    bot.dispatch(Event(fake, "test"))
+    bot.load_service(Console(bot))
+    #bot.load_plugin("cronus.plugins.test")
     bot.start()

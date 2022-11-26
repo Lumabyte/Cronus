@@ -1,5 +1,22 @@
 import argparse
 import asyncio
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
+
 from dataclasses import dataclass
 from logging import getLogger, Logger
 from inspect import getmembers, ismethod
@@ -19,7 +36,7 @@ class Key:
 
 @dataclass
 class PluginTask:
-    task: any
+    handler: Callable[..., Coroutine]
     scopes: list[str]
 
 
@@ -30,6 +47,9 @@ class Plugin:
             self._name = getattr(self, Key.PLUGIN_NAME)
         if hasattr(self, Key.PLUGIN_DESCRIPTION):
             self._description = getattr(self, Key.PLUGIN_DESCRIPTION)
+        if hasattr(self, Key.AUTH_SCOPES):
+            self._auth_scopes = getattr(self, Key.AUTH_SCOPES)
+
         self._logger = getLogger(f"plugin.{self._name}")
         self._event_handlers = []
         self._task_handlers = []
@@ -44,10 +64,14 @@ class Plugin:
     def logger(self) -> Logger:
         return self._logger
 
+    @property
+    def auth_scopes(self) -> str:
+        return self._auth_scopes
+
     # take an incoming event return a taskable for the core
     # app to start running the task
     # TODO: source_name can come from the source, event needs to be a new object
-    async def on_event(self, event: Event): PluginTask
+    async def on_event(self, event: Event) -> PluginTask:
         for event_handler in self._event_handlers:
             if not self._can_handle_event(event_handler, event.source, event.name):
                 return
@@ -74,7 +98,7 @@ class Plugin:
         if not self._argparser:
             self._argparser = argparse.ArgumentParser(prog=self.name, description=self._description)
         argparser_argument = getattr(method, "argparser_argument")
-        plugin_argparser.add_argument(**argparser_argument)
+        #plugin_argparser.add_argument(**argparser_argument)
 
     def _is_handler(self, method) -> bool:
         return hasattr(method, "is_handler")
@@ -99,7 +123,6 @@ class Plugin:
             return False
         return True
 
-
 def plugin(name: str, description: str, priority: int = 0, dependencies: list[str] = None):
     def wrapper(cls):
         cls[Key.PLUGIN_NAME] = name
@@ -112,22 +135,18 @@ def plugin(name: str, description: str, priority: int = 0, dependencies: list[st
 
 def handler(service: str = None, event: str = None):
     def wrapper(function):
-        function[Key.HANDLER_IS_HANDLER] = True
-        function[Key.HANDLER_SERVICE_FILTER] = service
-        function[Key.HANDLER_EVENT_FILTER] = event
+        #function[Key.HANDLER_IS_HANDLER] = True
+        #function[Key.HANDLER_SERVICE_FILTER] = service
+        #function[Key.HANDLER_EVENT_FILTER] = event
         return function
     return wrapper
 
-def authorized(requires: list[str] = None):
+def authorized(required_scopes: list[str] = None):
     def wrapper(function):
         function[Key.AUTH_REQUIRED] = True
-        function[Key.AUTH_SCOPES] = requires
+        function[Key.AUTH_SCOPES] = required_scopes
         return function
     return wrapper
-
-class NoNameException(Exception):
-    pass
-
 
 @handler(service=None, event="message")
 def command(*args):
@@ -135,3 +154,6 @@ def command(*args):
         function.argparser_argument = args
         return function
     return wrapper
+
+class NoNameException(Exception):
+    pass

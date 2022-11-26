@@ -3,10 +3,10 @@ import importlib
 import asyncio
 import inspect
 import logging
-
-from cronus.db import Session
 from cronus.plugin import Plugin, PluginTask
+from cronus.service import Service
 from cronus.event import Event
+from cronus import auth
 
 logger = logging.getLogger("core")
 
@@ -14,9 +14,8 @@ class Cronus():
 
     def __init__(self) -> None:
         self.plugins : dict[str, Plugin]  = {}
-        self.services = {}
+        self._services : dict[str, Service] = {}
         self._loop = asyncio.get_event_loop()
-        self._session = 
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -27,10 +26,20 @@ class Cronus():
         return self._loop
 
     def start(self) -> None:
-        self._loop.run_forever()
+        self._loop.run_until_complete(self._start())
+        #asyncio.run(self._start())
 
-    def load_services(self):
-        pass
+    async def _start(self) -> None:
+        starters = []
+        for _, service in self._services.items():
+            starters.append(await service.on_start())
+        if len(starters) == 0:
+            pass
+        else:
+            await asyncio.gather(starters[0])
+
+    def load_service(self, service):
+        self._services["derp"] = service
 
     def load_plugins(self):
         files = os.listdir("cronus/plugins")
@@ -64,16 +73,16 @@ class Cronus():
         for name, plugin in self.plugins.items():
             try:
                 task = plugin.on_event(event)
+
+                self._authorize_task(plugin, task, event)
+
                 self._loop.create_task(task, name=f'cronus.core.dispatcher: {plugin.name}/{event.name}')
             except Exception:
                 logger.error("failed to run %s event task for plugin %s", event.name, name)
 
     ## handlers are basically special coroutines
-    def _handler_authorizer(self, task: PluginTask):
-        ## no one can access any method unless scopes allow for it.
-        ## scope "*" means any scope matching the pattern
-        # - get the current user executing the event
-        # - get their permissions
-        # if the user permission scopes satisfy the required scopes, proceed.
-        # - if not, raise an exception to propogate upstream to the source service.
-        pass
+    def _authorize_task(self, plugin: Plugin, task: PluginTask, event: Event):
+        account = auth.get_account_by_identity(event.source.name, event.get_identity())
+        scopes = set(task.scopes) - set(plugin.auth_scopes)
+        if not auth.has_scopes(account, scopes):
+            raise auth.NotAuthorizedException()

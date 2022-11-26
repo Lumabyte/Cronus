@@ -4,7 +4,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.orm import relationship
 
-from cronus.core.db.models import Base, AuditMixin, SoftDeleteMixin
+from cronus.db.models import Base, AuditMixin, SoftDeleteMixin
 
 
 class Account(Base, AuditMixin, SoftDeleteMixin):

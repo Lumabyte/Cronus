@@ -20,3 +20,7 @@ class Event(dict):
 
     async def reply(self, *args, **kwargs) -> None:
         pass
+
+    def get_identity(self) -> str:
+        pass
+
