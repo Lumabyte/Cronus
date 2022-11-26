@@ -26,20 +26,20 @@ class Cronus():
         return self._loop
 
     def start(self) -> None:
-        self._loop.run_until_complete(self._start())
-        #asyncio.run(self._start())
+        self.loop.run_until_complete(self._start())
 
     async def _start(self) -> None:
         starters = []
         for _, service in self._services.items():
-            starters.append(await service.on_start())
+            starters.append(service.on_start())
         if len(starters) == 0:
             pass
         else:
-            await asyncio.gather(starters[0])
+            print(f"running tasks: {starters}")
+            await asyncio.gather(*starters)
 
     def load_service(self, service):
-        self._services["derp"] = service
+        self._services[service.name] = service
 
     def load_plugins(self):
         files = os.listdir("cronus/plugins")
@@ -63,9 +63,10 @@ class Cronus():
                 if (issubclass(klass, Plugin) and klass != Plugin):
                     instance = klass()
                     self.plugins[instance.name] = instance
-                    instance.logger().info("Loaded")
-        except Exception:
-            logger.error("failed to load plugin %s", module)
+                    print(dir(instance))
+                    instance.logger.info("Loaded")
+        except TypeError:
+            logger.error("failed to load plugin %s", module, exc_info=True)
 
     ## Handle auth stuff here rather than in the plugin itself.
     def dispatch(self, event: Event) -> None:

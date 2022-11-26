@@ -23,6 +23,7 @@ from inspect import getmembers, ismethod
 
 from cronus.event import Event
 
+
 class Key:
     PLUGIN_NAME = "plugin_name"
     PLUGIN_DESCRIPTION = "plugin_description"
@@ -33,6 +34,7 @@ class Key:
     HANDLER_EVENT_FILTER = "handler_event_filter"
     AUTH_REQUIRED = "auth_required"
     AUTH_SCOPES = "auth_scopes"
+
 
 @dataclass
 class PluginTask:
@@ -80,9 +82,9 @@ class Plugin:
                 # check if help is needed
                 # try parse command for given field
                 # change args for command usage
-            #try:
+            # try:
             #    await event_handler(self, source, *args, **kwargs)
-            #except Exception:
+            # except Exception:
             #    self.logger.error("Failed to run event_handler for event %s", event_name)
 
     # populate _event_handlers with all handlers that have an attribute for
@@ -98,7 +100,7 @@ class Plugin:
         if not self._argparser:
             self._argparser = argparse.ArgumentParser(prog=self.name, description=self._description)
         argparser_argument = getattr(method, "argparser_argument")
-        #plugin_argparser.add_argument(**argparser_argument)
+        # plugin_argparser.add_argument(**argparser_argument)
 
     def _is_handler(self, method) -> bool:
         return hasattr(method, "is_handler")
@@ -123,37 +125,44 @@ class Plugin:
             return False
         return True
 
+
 def plugin(name: str, description: str, priority: int = 0, dependencies: list[str] = None):
-    def wrapper(cls):
-        cls[Key.PLUGIN_NAME] = name
-        cls[Key.PLUGIN_DESCRIPTION] = description
-        cls[Key.PLUGIN_PRIORITY] = priority
-        cls[Key.PLUGIN_DEPENDENCIES] = dependencies
-        return cls
+    def wrapper(function):
+        setattr(function, Key.PLUGIN_NAME, name)
+        setattr(function, Key.PLUGIN_DESCRIPTION, description)
+        setattr(function, Key.PLUGIN_PRIORITY, priority)
+        setattr(function, Key.PLUGIN_DEPENDENCIES, dependencies)
+        return function
+
     return wrapper
 
 
 def handler(service: str = None, event: str = None):
     def wrapper(function):
-        #function[Key.HANDLER_IS_HANDLER] = True
-        #function[Key.HANDLER_SERVICE_FILTER] = service
-        #function[Key.HANDLER_EVENT_FILTER] = event
+        setattr(function, Key.HANDLER_IS_HANDLER, True)
+        setattr(function, Key.HANDLER_SERVICE_FILTER, service)
+        setattr(function, Key.PLUGIN_DEPENDENCIES, event)
         return function
+
     return wrapper
+
 
 def authorized(required_scopes: list[str] = None):
     def wrapper(function):
-        function[Key.AUTH_REQUIRED] = True
-        function[Key.AUTH_SCOPES] = required_scopes
+        setattr(function, Key.HANDLER_IS_HANDLER, True)
+        setattr(function, Key.HANDLER_SERVICE_FILTER, required_scopes)
         return function
+
     return wrapper
+
 
 @handler(service=None, event="message")
 def command(*args):
     def wrapper(function):
-        function.argparser_argument = args
         return function
+
     return wrapper
+
 
 class NoNameException(Exception):
     pass
