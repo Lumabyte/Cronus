@@ -34,6 +34,7 @@ class Key:
     HANDLER_EVENT_FILTER = "handler_event_filter"
     AUTH_REQUIRED = "auth_required"
     AUTH_SCOPES = "auth_scopes"
+    HANDLER_COMMAND_ARGS = "handler_command_args"
 
 
 @dataclass
@@ -70,58 +71,59 @@ class Plugin:
     def auth_scopes(self) -> str:
         return self._auth_scopes
 
-    # take an incoming event return a taskable for the core
-    # app to start running the task
-    # TODO: source_name can come from the source, event needs to be a new object
-    async def on_event(self, event: Event) -> PluginTask:
+    def on_event(self, event: Event) -> PluginTask:
         for event_handler in self._event_handlers:
             if not self._can_handle_event(event_handler, event.source, event.name):
-                return
+                continue
             if self._has_command_args(event_handler):
-                print(event_handler)
-                # check if help is needed
-                # try parse command for given field
-                # change args for command usage
-            # try:
-            #    await event_handler(self, source, *args, **kwargs)
-            # except Exception:
-            #    self.logger.error("Failed to run event_handler for event %s", event_name)
+                message = event.data["message"]
+                if not message:
+                    continue
+            return PluginTask(event_handler(event), [])
 
-    # populate _event_handlers with all handlers that have an attribute for
-    # is_handler = True
     def _setup(self):
         for _, method in getmembers(self, ismethod):
             if self._is_handler(method):
                 self._event_handlers.append(method)
+                self.logger.debug("registered handler %s", method.__name__)
                 if self._has_command_args(method):
                     self._setup_argparser(method)
 
     def _setup_argparser(self, method: any):
         if not self._argparser:
             self._argparser = argparse.ArgumentParser(prog=self.name, description=self._description)
-        argparser_argument = getattr(method, "argparser_argument")
-        # plugin_argparser.add_argument(**argparser_argument)
+        args = getattr(method, Key.HANDLER_COMMAND_ARGS)
+        for arg in args:
+            self._argparser.add_argument(arg)
 
-    def _is_handler(self, method) -> bool:
-        return hasattr(method, "is_handler")
+    def _is_handler(self, event_handler) -> bool:
+        return hasattr(event_handler, Key.HANDLER_IS_HANDLER)
 
     def _has_command_args(self, event_handler) -> bool:
-        if getattr(self, "plugin_parse_commands", False) and hasattr(event_handler, "argparser_argument"):
-            return True
-        return False
+        return hasattr(event_handler, Key.HANDLER_COMMAND_ARGS)
 
     def _get_event_handlers(self):
         for event_handler in self._event_handlers:
             return event_handler
 
     def _can_handle_event(self, event_handler, source_name, event_name) -> bool:
-        handler_service_name = getattr(event_handler, "handler_service_name", None)
+        handler_service_name = getattr(event_handler, Key.HANDLER_SERVICE_FILTER, None)
         if handler_service_name is not source_name:
+            self.logger.debug(
+                "%s: %s handler_service_name does not match %s",
+                event_handler.__name__,
+                handler_service_name,
+                source_name,
+            )
             return False
-        handler_event_name = getattr(event_handler, "handler_event_name", None)
+        handler_event_name = getattr(event_handler, Key.HANDLER_EVENT_FILTER, None)
         if handler_event_name is not event_name:
+            self.logger.debug(
+                "%s: %s handler_event_name does not match %s", event_handler.__name__, handler_event_name, event_name
+            )
             return False
         if not asyncio.iscoroutinefunction(event_handler):
+            self.logger.debug("%s is not a coroutine", event_handler.__name__)
             return False
         return True
 
@@ -141,7 +143,7 @@ def handler(service: str = None, event: str = None):
     def wrapper(function):
         setattr(function, Key.HANDLER_IS_HANDLER, True)
         setattr(function, Key.HANDLER_SERVICE_FILTER, service)
-        setattr(function, Key.PLUGIN_DEPENDENCIES, event)
+        setattr(function, Key.HANDLER_EVENT_FILTER, event)
         return function
 
     return wrapper
@@ -156,9 +158,9 @@ def authorized(required_scopes: list[str] = None):
     return wrapper
 
 
-@handler(service=None, event="message")
-def command(*args):
+def command(commands):
     def wrapper(function):
+        setattr(function, Key.HANDLER_COMMAND_ARGS, commands)
         return function
 
     return wrapper
