@@ -1,7 +1,7 @@
 import logging
 from cronus.core import Cronus
 from cronus.service import Service
-from cronus.services.console import Console
+from cronus.services.discord import Discord
 
 
 class FakeService(Service):
@@ -14,13 +14,12 @@ class FakeService(Service):
         pass
 
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(name)-12s %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)-12s %(message)s")
 
 
 if __name__ == "__main__":
     bot = Cronus()
-    bot.load_service(Console(bot))
-    bot.load_service(FakeService(bot))
+    bot.load_service(Discord(bot))
     bot.load_plugin("cronus.plugins.test")
     #bot.dispatch(Event(None, "message", "this is some random message"))
     bot.start()

@@ -71,15 +71,18 @@ class Plugin:
     def auth_scopes(self) -> str:
         return self._auth_scopes
 
-    def on_event(self, event: Event) -> PluginTask:
+    def on_event(self, event: Event):
+        handlers = []
         for event_handler in self._event_handlers:
-            if not self._can_handle_event(event_handler, event.source, event.name):
+            if not self._can_handle_event(event_handler, event.source.name, event.name):
                 continue
             if self._has_command_args(event_handler):
                 message = event.data["message"]
                 if not message:
                     continue
-            return PluginTask(event_handler(event), [])
+            print(f"appending new event handler {event_handler.__name__}")
+            handlers.append(event_handler(event))
+        return handlers
 
     def _setup(self):
         for _, method in getmembers(self, ismethod):
@@ -109,7 +112,7 @@ class Plugin:
     def _can_handle_event(self, event_handler, source_name, event_name) -> bool:
         handler_service_name = getattr(event_handler, Key.HANDLER_SERVICE_FILTER, None)
         if handler_service_name is not source_name:
-            self.logger.debug(
+            self.logger.info(
                 "%s: %s handler_service_name does not match %s",
                 event_handler.__name__,
                 handler_service_name,
@@ -118,12 +121,12 @@ class Plugin:
             return False
         handler_event_name = getattr(event_handler, Key.HANDLER_EVENT_FILTER, None)
         if handler_event_name is not event_name:
-            self.logger.debug(
+            self.logger.info(
                 "%s: %s handler_event_name does not match %s", event_handler.__name__, handler_event_name, event_name
             )
             return False
         if not asyncio.iscoroutinefunction(event_handler):
-            self.logger.debug("%s is not a coroutine", event_handler.__name__)
+            self.logger.info("%s is not a coroutine", event_handler.__name__)
             return False
         return True
 
@@ -144,6 +147,7 @@ def handler(service: str = None, event: str = None):
         setattr(function, Key.HANDLER_IS_HANDLER, True)
         setattr(function, Key.HANDLER_SERVICE_FILTER, service)
         setattr(function, Key.HANDLER_EVENT_FILTER, event)
+        # priority
         return function
 
     return wrapper

@@ -29,6 +29,7 @@ class Test(Plugin):
     @handler(service="discord", event="message")
     async def test_discord_message(self, event: Event):
         self.logger.info("executed handler test_discord_message")
+        await event.reply("this is my favourite thing!")
 
     @handler(event="message")
     async def test_none_message(self, event: Event):
@@ -43,13 +44,14 @@ if __name__ == "__main__":
 
     async def run():
         test = Test()
-        ptask = test.on_event(
+        tasks = test.on_event(
             Event(
                 "discord",
                 "message",
                 {"message": "test --alpha -c", "timestamp": 1203910239120, "meta": "asdasdasd"},
             )
         )
-        await asyncio.create_task(ptask.handler(), name=ptask.handler.__name__)
+
+        await asyncio.gather(*tasks)
 
     asyncio.run(run())

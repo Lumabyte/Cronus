@@ -3,6 +3,9 @@ import importlib
 import asyncio
 import inspect
 import logging
+from typing import (
+    Coroutine
+)
 from cronus.plugin import Plugin, PluginTask
 from cronus.service import Service
 from cronus.event import Event
@@ -16,6 +19,7 @@ class Cronus():
         self.plugins : dict[str, Plugin]  = {}
         self._services : dict[str, Service] = {}
         self._loop = asyncio.get_event_loop()
+        self._listeners = {}
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -63,7 +67,6 @@ class Cronus():
                 if (issubclass(klass, Plugin) and klass != Plugin):
                     instance = klass()
                     self.plugins[instance.name] = instance
-                    print(dir(instance))
                     instance.logger.info("Loaded")
         except TypeError:
             logger.error("failed to load plugin %s", module, exc_info=True)
@@ -73,13 +76,10 @@ class Cronus():
         logger.info("dispatching event: %s", event.name)
         for name, plugin in self.plugins.items():
             try:
-                task = plugin.on_event(event)
-
-                self._authorize_task(plugin, task, event)
-
-                self._loop.create_task(task, name=f'cronus.core.dispatcher: {plugin.name}/{event.name}')
+                tasks = plugin.on_event(event)
+                asyncio.gather(*tasks)
             except Exception:
-                logger.error("failed to run %s event task for plugin %s", event.name, name)
+                logger.error("failed to run %s event task for plugin %s", event.name, name, exc_info=True)
 
     ## handlers are basically special coroutines
     def _authorize_task(self, plugin: Plugin, task: PluginTask, event: Event):
@@ -87,3 +87,37 @@ class Cronus():
         scopes = set(task.scopes) - set(plugin.auth_scopes)
         if not auth.has_scopes(account, scopes):
             raise auth.NotAuthorizedException()
+
+    async def add_listeners(self, container: None, listeners) -> None:
+        if not self._listeners[container]:
+            self._listeners[container] = (asyncio.Queue(), listeners)
+        else:
+            self._logger.warn("Failed to add listeners to container: Container already exists.")
+
+    async def remove_listeners(self, container: None) -> None:
+        # TODO: Stop the running tasks for everything in this event container.
+        del self._listeners[container]
+
+    async def dispatch(self, event: any) -> None:
+        tasks = []
+        for _, value in self._listeners.items():
+            queue, handlers = value
+            self._queue_event(queue, event)
+            task = self._queue_runnable_tasks(queue, handlers)
+            tasks.append(task)
+        await asyncio.gather(*tasks)
+
+    def _queue_event(self, queue: asyncio.Queue, event: any):
+        queue.put_nowait(event)
+
+    def _queue_runnable_tasks(self, queue: asyncio.Queue, handlers: Coroutine):
+        return asyncio.create_task(self._run_ordered_task(queue, handlers))
+
+    async def _run_ordered_task(self, queue: asyncio.Queue, handlers: list[Coroutine]):
+        event = await queue.get()
+        for handler in handlers:
+            try:
+                await handler(event)
+            except: # pylint: disable=bare-except
+                self._logger.error("Failed to run event handler", exc_info=True)
+        queue.task_done()
