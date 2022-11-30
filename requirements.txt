@@ -1,4 +1,5 @@
 discord.py
+twitchio
 unqlite
 fastapi
 textual

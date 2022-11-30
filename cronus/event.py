@@ -1,26 +1,12 @@
-from cronus.service import Service
-
-
-class Event(dict):
-    def __init__(self, source: Service, name: str, data: any) -> None:
-        self._source = source
-        self._name = name
+class Event:
+    def __init__(self, event: str, data: any) -> None:
+        self._event = event
         self._data = data
 
     @property
-    def source(self) -> Service:
-        return self._source
-
-    @property
-    def name(self) -> str:
-        return self._name
+    def event(self) -> str:
+        return self._event
 
     @property
     def data(self) -> any:
         return self._data
-
-    async def reply(self, *args, **kwargs) -> None:
-        pass
-
-    def get_identity(self) -> str:
-        pass

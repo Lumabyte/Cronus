@@ -9,7 +9,6 @@ from typing import (
 from cronus.plugin import Plugin, PluginTask
 from cronus.service import Service
 from cronus.event import Event
-from cronus import auth
 
 logger = logging.getLogger("core")
 
@@ -71,15 +70,6 @@ class Cronus():
         except TypeError:
             logger.error("failed to load plugin %s", module, exc_info=True)
 
-    ## Handle auth stuff here rather than in the plugin itself.
-    def dispatch(self, event: Event) -> None:
-        logger.info("dispatching event: %s", event.name)
-        for name, plugin in self.plugins.items():
-            try:
-                tasks = plugin.on_event(event)
-                asyncio.gather(*tasks)
-            except Exception:
-                logger.error("failed to run %s event task for plugin %s", event.name, name, exc_info=True)
 
     ## handlers are basically special coroutines
     def _authorize_task(self, plugin: Plugin, task: PluginTask, event: Event):
@@ -92,13 +82,13 @@ class Cronus():
         if not self._listeners[container]:
             self._listeners[container] = (asyncio.Queue(), listeners)
         else:
-            self._logger.warn("Failed to add listeners to container: Container already exists.")
+            logger.warning("Failed to add listeners to container: Container already exists.")
 
     async def remove_listeners(self, container: None) -> None:
         # TODO: Stop the running tasks for everything in this event container.
         del self._listeners[container]
 
-    async def dispatch(self, event: any) -> None:
+    async def dispatch(self, event: Event) -> None:
         tasks = []
         for _, value in self._listeners.items():
             queue, handlers = value
@@ -107,7 +97,7 @@ class Cronus():
             tasks.append(task)
         await asyncio.gather(*tasks)
 
-    def _queue_event(self, queue: asyncio.Queue, event: any):
+    def _queue_event(self, queue: asyncio.Queue, event: Event):
         queue.put_nowait(event)
 
     def _queue_runnable_tasks(self, queue: asyncio.Queue, handlers: Coroutine):
@@ -119,5 +109,5 @@ class Cronus():
             try:
                 await handler(event)
             except: # pylint: disable=bare-except
-                self._logger.error("Failed to run event handler", exc_info=True)
+                logger.error("Failed to run event handler", exc_info=True)
         queue.task_done()

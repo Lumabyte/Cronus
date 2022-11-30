@@ -1,13 +1,10 @@
 from cronus.plugin import Plugin, command, plugin, handler
 from cronus.event import Event
 
-import logging
-
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(name)-12s %(message)s")
-
 
 @plugin(name="test", description="A useful test plugin.")
 class Test(Plugin):
+
     @command(
         [
             ("test"),
@@ -23,7 +20,7 @@ class Test(Plugin):
         self.logger.info("executed handler test_command: %s", event.data)
 
     @handler()
-    async def test_raw(self, event: Event):
+    async def test_raw(self, _: Event):
         self.logger.info("executed handler test_raw")
 
     @handler(service="discord", event="message")
@@ -32,7 +29,7 @@ class Test(Plugin):
         await event.reply("this is my favourite thing!")
 
     @handler(event="message")
-    async def test_none_message(self, event: Event):
+    async def test_none_message(self, _: Event):
         self.logger.info("executed handler test_none_message")
         await asyncio.sleep(5)
         self.logger.info("finished execution")
