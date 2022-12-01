@@ -71,13 +71,6 @@ class Cronus():
             logger.error("failed to load plugin %s", module, exc_info=True)
 
 
-    ## handlers are basically special coroutines
-    def _authorize_task(self, plugin: Plugin, task: PluginTask, event: Event):
-        account = auth.get_account_by_identity(event.source.name, event.get_identity())
-        scopes = set(task.scopes) - set(plugin.auth_scopes)
-        if not auth.has_scopes(account, scopes):
-            raise auth.NotAuthorizedException()
-
     async def add_listeners(self, container: None, listeners) -> None:
         if not self._listeners[container]:
             self._listeners[container] = (asyncio.Queue(), listeners)

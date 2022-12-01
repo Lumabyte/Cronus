@@ -68,6 +68,10 @@ class Plugin:
         return self._logger
 
     @property
+    def event_handlers(self) -> list: ## add the list type of returned handlers (coroutines)
+        return self._event_handlers
+
+    @property
     def auth_scopes(self) -> str:
         return self._auth_scopes
 
