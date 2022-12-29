@@ -1,4 +1,4 @@
-import os
+"""import os
 import importlib
 import asyncio
 import inspect
@@ -104,3 +104,4 @@ class Cronus():
             except: # pylint: disable=bare-except
                 logger.error("Failed to run event handler", exc_info=True)
         queue.task_done()
+"""
